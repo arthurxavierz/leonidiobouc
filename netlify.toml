@@ -53,6 +53,10 @@
   from = "/comunicacao"
   to = "/comunicacao.html"
   status = 200
+[[redirects]]
+  from = "/gerador"
+  to = "/gerador.html"
+  status = 200
 
 # 404 personalizado
 [[redirects]]
