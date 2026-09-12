@@ -24,6 +24,7 @@ const header = document.querySelector('.site-header');
 const menuButton = document.querySelector('.menu-toggle');
 const nav = document.querySelector('.main-nav');
 const navLinks = [...document.querySelectorAll('.main-nav a[href^="#"]')];
+const navAllLinks = [...document.querySelectorAll('.main-nav a')];
 const currentPage = document.body.dataset.page;
 
 document.querySelectorAll('.main-nav a[data-nav]').forEach((link) => {
@@ -36,6 +37,7 @@ function closeMenu() {
   menuButton.setAttribute('aria-expanded', 'false');
   nav.classList.remove('open');
   document.body.classList.remove('menu-open');
+  document.documentElement.classList.remove('menu-open');
 }
 
 menuButton.addEventListener('click', () => {
@@ -44,27 +46,46 @@ menuButton.addEventListener('click', () => {
   menuButton.setAttribute('aria-expanded', String(open));
   nav.classList.toggle('open', open);
   document.body.classList.toggle('menu-open', open);
+  document.documentElement.classList.toggle('menu-open', open);
 });
 
-navLinks.forEach((link) => link.addEventListener('click', closeMenu));
+navAllLinks.forEach((link) => link.addEventListener('click', closeMenu));
 
 window.addEventListener('scroll', () => {
   header.classList.toggle('scrolled', window.scrollY > 34);
 }, { passive: true });
 
-const revealObserver = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
-    if (entry.isIntersecting) {
-      entry.target.classList.add('visible');
-      revealObserver.unobserve(entry.target);
+const revealItems = [...document.querySelectorAll('.reveal')];
+
+function reveal(element) {
+  element.classList.add('visible');
+}
+
+if ('IntersectionObserver' in window) {
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        reveal(entry.target);
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -45px' });
+
+  revealItems.forEach((element, index) => {
+    element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
+    // o que ja nasce na tela nao espera o observer: o hero entra na hora
+    if (element.getBoundingClientRect().top < window.innerHeight * 0.92) {
+      reveal(element);
+    } else {
+      revealObserver.observe(element);
     }
   });
-}, { threshold: 0.12, rootMargin: '0px 0px -45px' });
 
-document.querySelectorAll('.reveal').forEach((element, index) => {
-  element.style.transitionDelay = `${Math.min(index % 4, 3) * 70}ms`;
-  revealObserver.observe(element);
-});
+  // rede de seguranca: se o observer nao disparar, nada fica invisivel
+  window.setTimeout(() => revealItems.forEach(reveal), 2600);
+} else {
+  revealItems.forEach(reveal);
+}
 
 const filters = [...document.querySelectorAll('.filter')];
 const cards = [...document.querySelectorAll('.priority-card')];
