@@ -32,26 +32,56 @@ document.querySelectorAll('.main-nav a[data-nav]').forEach((link) => {
   if (link.dataset.nav === currentPage) link.setAttribute('aria-current', 'page');
 });
 
-function closeMenu() {
-  menuButton.classList.remove('active');
-  menuButton.setAttribute('aria-expanded', 'false');
-  nav.classList.remove('open');
-  document.body.classList.remove('menu-open');
-  document.documentElement.classList.remove('menu-open');
+// Posicao guardada enquanto o menu esta aberto. No iOS o overflow hidden
+// nao segura o scroll: o jeito confiavel e tirar o body do fluxo e devolver
+// a posicao ao fechar.
+let lockedScroll = 0;
+
+function isMenuOpen() {
+  return nav.classList.contains('open');
 }
 
-menuButton.addEventListener('click', () => {
-  const open = !nav.classList.contains('open');
+function setMenu(open) {
+  if (open === isMenuOpen()) return;
+
+  if (open) {
+    lockedScroll = window.scrollY || window.pageYOffset || 0;
+    document.body.style.top = `-${lockedScroll}px`;
+  }
+
   menuButton.classList.toggle('active', open);
   menuButton.setAttribute('aria-expanded', String(open));
   nav.classList.toggle('open', open);
   document.body.classList.toggle('menu-open', open);
   document.documentElement.classList.toggle('menu-open', open);
+
+  if (!open) {
+    document.body.style.top = '';
+    // instant: a folha usa scroll-behavior smooth, e aqui a volta tem que
+    // ser seca, senao a pagina anima de volta (ou nem volta)
+    window.scrollTo({ top: lockedScroll, behavior: 'instant' });
+  }
+}
+
+function closeMenu() {
+  setMenu(false);
+}
+
+menuButton.addEventListener('click', () => setMenu(!isMenuOpen()));
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape') closeMenu();
+});
+
+// ao voltar pra largura de desktop o painel nao pode ficar preso
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 980) closeMenu();
 });
 
 navAllLinks.forEach((link) => link.addEventListener('click', closeMenu));
 
 window.addEventListener('scroll', () => {
+  if (isMenuOpen()) return;
   header.classList.toggle('scrolled', window.scrollY > 34);
 }, { passive: true });
 
